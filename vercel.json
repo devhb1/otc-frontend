@@ -1,0 +1,58 @@
+{
+    "buildCommand": "npm run build",
+    "devCommand": "npm run dev",
+    "installCommand": "npm install",
+    "framework": "nextjs",
+    "outputDirectory": ".next",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "SAMEORIGIN"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                },
+                {
+                    "key": "Permissions-Policy",
+                    "value": "camera=(), microphone=(), geolocation=()"
+                }
+            ]
+        },
+        {
+            "source": "/api/:path*",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store, no-cache, must-revalidate"
+                }
+            ]
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/:path*",
+            "destination": "/:path*"
+        }
+    ],
+    "env": {
+        "NEXT_PUBLIC_API_URL": "@next_public_api_url"
+    },
+    "regions": [
+        "iad1"
+    ],
+    "public": true
+}
