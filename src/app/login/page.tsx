@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
 function LoginContent() {
@@ -80,76 +81,93 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your OTC Platform account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {showVerifiedMessage && (
-            <Alert variant="success" className="mb-4">
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                Email verified successfully! You can now log in.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled={loading}
-                required
-              />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                disabled={loading}
-                required
-              />
-            </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+              OTC Platform
+            </h1>
+          </div>
+        </div>
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Welcome Back</CardTitle>
+            <CardDescription>Sign in to your OTC Platform account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {showVerifiedMessage && (
+              <Alert variant="success" className="mb-4">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Email verified successfully! You can now log in.
+                </AlertDescription>
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  disabled={loading}
+                  required
+                />
+              </div>
 
-          <div className="mt-6 space-y-4">
-            <div className="text-center text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
-              <Link href="/register" className="text-blue-600 hover:underline">
-                Sign up
-              </Link>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+
+            <div className="mt-6 space-y-4">
+              <div className="text-center text-sm text-brand-grey-400">
+                Don&apos;t have an account?{' '}
+                <Link href="/register" className="text-brand-accent-primary hover:text-brand-accent-primary/80 font-semibold transition">
+                  Sign up
+                </Link>
+              </div>
+              <div className="text-center text-sm">
+                <Link href="/verify-email" className="text-brand-accent-secondary hover:text-brand-accent-secondary/80 font-semibold transition">
+                  Verify email address
+                </Link>
+              </div>
             </div>
-            <div className="text-center text-sm">
-              <Link href="/verify-email" className="text-blue-600 hover:underline">
-                Verify email address
-              </Link>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
