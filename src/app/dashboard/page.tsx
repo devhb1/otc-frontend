@@ -9,13 +9,55 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DashboardSkeleton } from '@/components/ui/skeleton';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { LogOut, User, Mail, Shield, AlertCircle } from 'lucide-react';
+import { LogOut, User, Mail, Shield, AlertCircle, Wallet, TrendingUp, CheckCircle, ArrowRight } from 'lucide-react';
+
+interface DashboardData {
+  user: {
+    email: string;
+    role: string;
+    kycStatus: string;
+    referralCode: string;
+    wallets: Array<{
+      currency: string;
+      balance: string;
+      lockedBalance: string;
+    }>;
+  };
+  platform: {
+    name: string;
+    tagline: string;
+    description: string;
+    features: Array<{
+      title: string;
+      description: string;
+      icon: string;
+    }>;
+    howItWorks: Array<{
+      step: number;
+      title: string;
+      description: string;
+    }>;
+  };
+  quickStats: {
+    totalWallets: number;
+    totalBalance: string;
+    kycCompleted: boolean;
+    accountAge: number;
+  };
+  nextSteps: Array<{
+    title: string;
+    description: string;
+    action: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, setUser, logout } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -26,28 +68,34 @@ export default function DashboardPage() {
         return;
       }
 
-      if (!user) {
-        try {
-          // Fetch user profile with timeout
-          const response = await api.get('/api/v1/users/me');
-          setUser(response.data);
-          setError('');
-        } catch (err) {
-          // Handle different error types
-          const error = err as { response?: { status?: number; data?: { message?: string } }; code?: string };
+      try {
+        // Fetch dashboard data from new endpoint
+        const response = await api.get('/api/v1/users/dashboard');
+        const data = response.data as DashboardData;
+        
+        setDashboardData(data);
+        setUser({
+          id: '',
+          email: data.user.email,
+          role: data.user.role as 'BUYER' | 'SELLER',
+          isVerified: true,
+        });
+        setError('');
+      } catch (err) {
+        // Handle different error types
+        const error = err as { response?: { status?: number; data?: { message?: string } }; code?: string };
 
-          if (error.code === 'ECONNABORTED') {
-            setError('Request timeout. Please check your connection.');
-          } else if (error.response?.status === 401) {
-            // Token invalid, redirect to login
-            logout();
-            router.push('/login');
-            return;
-          } else if (error.response?.status === 403) {
-            setError('Access denied. Please contact support.');
-          } else {
-            setError(error.response?.data?.message || 'Failed to load profile. Please try again.');
-          }
+        if (error.code === 'ECONNABORTED') {
+          setError('Request timeout. Please check your connection.');
+        } else if (error.response?.status === 401) {
+          // Token invalid, redirect to login
+          logout();
+          router.push('/login');
+          return;
+        } else if (error.response?.status === 403) {
+          setError('Access denied. Please contact support.');
+        } else {
+          setError(error.response?.data?.message || 'Failed to load dashboard. Please try again.');
         }
       }
 
@@ -55,7 +103,7 @@ export default function DashboardPage() {
     };
 
     checkAuth();
-  }, [user, setUser, logout, router]);
+  }, [setUser, logout, router]);
 
   const handleLogout = () => {
     logout();
@@ -65,7 +113,15 @@ export default function DashboardPage() {
   const handleRetry = () => {
     setError('');
     setLoading(true);
-    setUser(null);
+    setDashboardData(null);
+  };
+
+  const getPriorityColor = (priority: 'high' | 'medium' | 'low') => {
+    switch (priority) {
+      case 'high': return 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30';
+      case 'medium': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30';
+      case 'low': return 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30';
+    }
   };
 
   if (loading) {
@@ -124,7 +180,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold">OTC Platform</h1>
+            <h1 className="text-2xl font-bold">{dashboardData?.platform.name}</h1>
           </div>
           <div className="flex gap-3 items-center">
             <ThemeToggle />
@@ -138,12 +194,89 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
         <div className="mb-10">
-          <h2 className="text-4xl font-bold mb-3">Welcome back!</h2>
-          <p className="text-muted-foreground text-lg">Manage your trades and account from here.</p>
+          <h2 className="text-4xl font-bold mb-3">Welcome back{dashboardData?.user.email ? `, ${dashboardData.user.email.split('@')[0]}` : ''}!</h2>
+          <p className="text-muted-foreground text-lg">{dashboardData?.platform.tagline}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Balance</p>
+                  <p className="text-2xl font-bold">${dashboardData?.quickStats.totalBalance}</p>
+                </div>
+                <Wallet className="h-8 w-8 text-primary opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Wallets</p>
+                  <p className="text-2xl font-bold">{dashboardData?.quickStats.totalWallets}</p>
+                </div>
+                <Wallet className="h-8 w-8 text-primary opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">KYC Status</p>
+                  <p className="text-2xl font-bold">{dashboardData?.user.kycStatus}</p>
+                </div>
+                <Shield className="h-8 w-8 text-primary opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Account Age</p>
+                  <p className="text-2xl font-bold">{dashboardData?.quickStats.accountAge}d</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-primary opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Next Steps */}
+        {dashboardData && dashboardData.nextSteps.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold mb-4">Next Steps</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dashboardData.nextSteps.map((step, idx) => (
+                <Card key={idx} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="text-lg">{step.title}</CardTitle>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(step.priority)}`}>
+                        {step.priority}
+                      </span>
+                    </div>
+                    <CardDescription>{step.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full" variant="secondary">
+                      {step.action}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Profile Card */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -156,16 +289,15 @@ export default function DashboardPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="h-5 w-5 text-muted-foreground" />
-                <span>{user?.email}</span>
+                <span>{dashboardData?.user.email}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Shield className="h-5 w-5 text-muted-foreground" />
-                <span>Role: <span className="font-semibold text-primary">{user?.role}</span></span>
+                <span>Role: <span className="font-semibold text-primary">{dashboardData?.user.role}</span></span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30">
-                  ✓ Verified
-                </span>
+                <span className="text-muted-foreground">Referral Code:</span>
+                <code className="px-2 py-1 bg-secondary rounded text-primary font-mono">{dashboardData?.user.referralCode}</code>
               </div>
             </CardContent>
           </Card>
@@ -176,19 +308,18 @@ export default function DashboardPage() {
               <CardTitle>Wallets</CardTitle>
               <CardDescription>Your wallet balances</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                <span className="text-sm font-semibold text-muted-foreground">MAAL</span>
-                <span className="text-lg font-bold">0.00</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                <span className="text-sm font-semibold text-muted-foreground">USDT</span>
-                <span className="text-lg font-bold">0.00</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                <span className="text-sm font-semibold text-muted-foreground">USD</span>
-                <span className="text-lg font-bold">$0.00</span>
-              </div>
+            <CardContent className="space-y-3">
+              {dashboardData?.user.wallets.map((wallet, idx) => (
+                <div key={idx} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                  <span className="text-sm font-semibold text-muted-foreground">{wallet.currency}</span>
+                  <div className="text-right">
+                    <div className="text-lg font-bold">{wallet.balance}</div>
+                    {parseFloat(wallet.lockedBalance) > 0 && (
+                      <div className="text-xs text-muted-foreground">Locked: {wallet.lockedBalance}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -203,7 +334,7 @@ export default function DashboardPage() {
                 View Market
               </Button>
               <Button className="w-full" variant="secondary">
-                {user?.role === 'SELLER' ? 'Create Ad' : 'Browse Ads'}
+                {dashboardData?.user.role === 'SELLER' ? 'Create Ad' : 'Browse Ads'}
               </Button>
               <Button className="w-full" variant="secondary">
                 Transaction History
@@ -212,8 +343,58 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Additional Info */}
-        <div className="mt-8">
+        {/* About Platform */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">About {dashboardData?.platform.name}</CardTitle>
+              <CardDescription className="text-base">{dashboardData?.platform.description}</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {/* Platform Features */}
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold mb-4">Platform Features</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dashboardData?.platform.features.map((feature, idx) => (
+              <Card key={idx} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <span className="text-2xl">{feature.icon}</span>
+                    {feature.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* How It Works */}
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold mb-4">How It Works</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {dashboardData?.platform.howItWorks.map((step, idx) => (
+              <Card key={idx} className="hover:shadow-lg transition-shadow relative">
+                <CardHeader>
+                  <div className="absolute -top-4 -left-4 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
+                    {step.step}
+                  </div>
+                  <CardTitle className="text-lg mt-2">{step.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Platform Status */}
+        <div>
           <Card>
             <CardHeader>
               <CardTitle>Platform Status</CardTitle>
